@@ -4,7 +4,7 @@ import {
   ChevronLeft, Search, Edit2, Trash2, Plus, Package,
   X, AlertTriangle, Save, Upload, Link, Image as ImageIcon,
   Smartphone, Tag, ChevronDown, Check, RefreshCw,
-  Lock, Shield,
+  Lock, Shield, TrendingUp, PackagePlus,
 } from "lucide-react";
 import { motion as Motion, AnimatePresence } from "motion/react";
 import { Button, Input } from "./ui";
@@ -212,6 +212,8 @@ export const AllProductsView = ({ onBack, onAdd }: { onBack: () => void; onAdd: 
   const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
   const [confirmDelete, setConfirmDelete]   = React.useState<string | null>(null);
   const [accessDeniedToast, setAccessDeniedToast] = React.useState(false);
+  const [restockProduct, setRestockProduct] = React.useState<Product | null>(null);
+  const [restockQty, setRestockQty] = React.useState("10");
 
   // Contrôle d'accès admin (synchrone, lecture directe du localStorage)
   const currentUser = React.useMemo(() => api.getCurrentUser(), []);
@@ -327,6 +329,34 @@ export const AllProductsView = ({ onBack, onAdd }: { onBack: () => void; onAdd: 
     }
   };
 
+  const handleRestock = async () => {
+    if (!restockProduct) return;
+    const qty = Number(restockQty) || 0;
+    if (qty <= 0) return;
+
+    try {
+      const newQty = restockProduct.quantite + qty;
+      const updated = await api.saveProduct({
+        ...restockProduct,
+        quantite: newQty,
+      });
+      setProducts(products.map((p) => p.id === updated.id ? updated : p));
+      setRestockProduct(null);
+      setRestockQty("10");
+
+      const currentUser = api.getCurrentUser();
+      await api.logAction({
+        type: "réapprovisionnement",
+        description: `Réapprovisionnement — ${restockProduct.nom} : +${qty} unité(s) → ${newQty}`,
+        userId: currentUser?.id,
+        userName: currentUser?.nom,
+        metadata: { productId: restockProduct.id, nom: restockProduct.nom, quantiteAjoutee: qty, nouveauStock: newQty },
+      });
+    } catch (err) {
+      console.error("Failed to restock product:", err);
+    }
+  };
+
   // Trouver la catégorie sélectionnée pour affichage
   const activeCat = categories.find((c) => c.id === selectedCategory);
 
@@ -395,6 +425,134 @@ export const AllProductsView = ({ onBack, onAdd }: { onBack: () => void; onAdd: 
                   <Save size={15} />
                   Sauvegarder
                 </Button>
+              </div>
+            </Motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ══ Modal Réapprovisionnement ═══════════════════════════════════ */}
+      <AnimatePresence>
+        {restockProduct && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <Motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-[#0c111a] border border-green-500/30 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden"
+            >
+              <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                  <PackagePlus size={15} className="text-green-500" />
+                  Réapprovisionnement Rapide
+                </h3>
+                <button onClick={() => setRestockProduct(null)}
+                  className="p-1 hover:bg-gray-800 rounded-full transition-colors text-gray-500 cursor-pointer">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                {/* Info produit */}
+                <div className="bg-gray-900/60 rounded-xl p-3 border border-gray-700/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-gray-800 overflow-hidden shrink-0 border border-gray-700">
+                      <ImageWithFallback
+                        src={restockProduct.image}
+                        alt={restockProduct.nom}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-white truncate">{restockProduct.nom}</p>
+                      <p className="text-[10px] text-gray-500 font-mono">{restockProduct.alias}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-[11px] font-bold ${
+                          restockProduct.quantite <= 0
+                            ? "text-red-400"
+                            : restockProduct.quantite <= restockProduct.seuil
+                            ? "text-amber-400"
+                            : "text-green-400"
+                        }`}>
+                          Stock actuel : {restockProduct.quantite}
+                        </span>
+                        {restockProduct.categorieNom && (
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+                            style={{
+                              backgroundColor: `${restockProduct.categorieCouleur}20`,
+                              color: restockProduct.categorieCouleur,
+                              border: `1px solid ${restockProduct.categorieCouleur}40`,
+                            }}
+                          >
+                            <span
+                              className="w-1.5 h-1.5 rounded-full"
+                              style={{ backgroundColor: restockProduct.categorieCouleur }}
+                            />
+                            {restockProduct.categorieNom}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quantité à ajouter */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">
+                    Quantité à ajouter
+                  </label>
+                  <div className="flex gap-2">
+                    {[5, 10, 20, 50].map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setRestockQty(String(val))}
+                        className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          restockQty === String(val)
+                            ? "bg-green-600 text-white shadow-lg"
+                            : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                        }`}
+                      >
+                        +{val}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    value={restockQty}
+                    onChange={(e) => setRestockQty(e.target.value)}
+                    className="w-full bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white text-center font-bold focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                    placeholder="Quantité personnalisée"
+                  />
+                </div>
+
+                {/* Aperçu nouveau stock */}
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2 flex items-center justify-between">
+                  <span className="text-xs text-gray-400">Nouveau stock :</span>
+                  <span className="text-lg font-black text-green-400">
+                    {restockProduct.quantite + (Number(restockQty) || 0)}
+                  </span>
+                </div>
+
+                {/* Boutons */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setRestockProduct(null)}
+                    className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleRestock}
+                    disabled={!restockQty || Number(restockQty) <= 0}
+                    className="flex-1 py-2.5 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <TrendingUp size={13} />
+                    Réapprovisionner
+                  </button>
+                </div>
               </div>
             </Motion.div>
           </div>
@@ -705,6 +863,11 @@ export const AllProductsView = ({ onBack, onAdd }: { onBack: () => void; onAdd: 
                   <div className="flex flex-col gap-1.5 shrink-0">
                     {isAdmin ? (
                       <>
+                        <button onClick={() => { setRestockProduct(p); setRestockQty("10"); }}
+                          className="p-2 bg-gray-800 hover:bg-green-600/20 rounded-xl text-gray-400 hover:text-green-400 transition-colors cursor-pointer"
+                          title="Réapprovisionner">
+                          <PackagePlus size={13} />
+                        </button>
                         <button onClick={() => setEditingProduct(p)}
                           className="p-2 bg-gray-800 hover:bg-blue-600/20 rounded-xl text-gray-400 hover:text-blue-400 transition-colors cursor-pointer"
                           title="Modifier">

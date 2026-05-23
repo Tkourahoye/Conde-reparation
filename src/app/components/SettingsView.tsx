@@ -22,15 +22,16 @@ import { api } from "../utils/api";
 interface SettingsViewProps {
   onBack: () => void;
   currentUser: any;
+  appTheme: 'dark' | 'light';
+  onThemeChange: (theme: 'dark' | 'light') => void;
 }
 
 type Tab = "categories" | "users" | "theme" | "general";
 
-export function SettingsView({ onBack, currentUser }: SettingsViewProps) {
+export function SettingsView({ onBack, currentUser, appTheme, onThemeChange }: SettingsViewProps) {
   const [activeTab, setActiveTab] = React.useState<Tab>("categories");
   const [categories, setCategories] = React.useState<any[]>([]);
   const [users, setUsers] = React.useState<any[]>([]);
-  const [settings, setSettings] = React.useState<any>({ theme: "dark" });
 
   // Category form
   const [categoryForm, setCategoryForm] = React.useState({
@@ -52,14 +53,12 @@ export function SettingsView({ onBack, currentUser }: SettingsViewProps) {
   const [userError, setUserError] = React.useState("");
 
   const loadData = React.useCallback(async () => {
-    const [cats, usrs, stgs] = await Promise.all([
+    const [cats, usrs] = await Promise.all([
       api.getCategories(),
       api.getUsers(),
-      api.getSettings(),
     ]);
     setCategories(cats);
     setUsers(usrs);
-    setSettings(stgs);
   }, []);
 
   React.useEffect(() => {
@@ -179,12 +178,10 @@ export function SettingsView({ onBack, currentUser }: SettingsViewProps) {
 
   // ── Theme Management ────────────────────────────────────────────────────
   const handleThemeChange = async (theme: "dark" | "light") => {
-    const newSettings = { ...settings, theme };
-    await api.saveSettings(newSettings);
-    setSettings(newSettings);
+    onThemeChange(theme);
 
     await api.logAction({
-      type: "connexion",
+      type: "thème_modifié",
       description: `Thème changé en mode ${
         theme === "dark" ? "sombre" : "clair"
       }`,
@@ -554,7 +551,7 @@ export function SettingsView({ onBack, currentUser }: SettingsViewProps) {
                       <button
                         onClick={() => handleThemeChange("dark")}
                         className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                          settings.theme === "dark"
+                          appTheme === "dark"
                             ? "border-blue-500 bg-blue-500/10"
                             : "border-gray-700 bg-gray-800/30 hover:bg-gray-800/50"
                         }`}
@@ -566,7 +563,7 @@ export function SettingsView({ onBack, currentUser }: SettingsViewProps) {
                           <span className="text-sm font-medium text-white">
                             Sombre
                           </span>
-                          {settings.theme === "dark" && (
+                          {appTheme === "dark" && (
                             <div className="flex items-center gap-1 text-xs text-blue-400">
                               <Check size={12} />
                               <span>Actif</span>
@@ -579,7 +576,7 @@ export function SettingsView({ onBack, currentUser }: SettingsViewProps) {
                       <button
                         onClick={() => handleThemeChange("light")}
                         className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                          settings.theme === "light"
+                          appTheme === "light"
                             ? "border-blue-500 bg-blue-500/10"
                             : "border-gray-700 bg-gray-800/30 hover:bg-gray-800/50"
                         }`}
@@ -591,7 +588,7 @@ export function SettingsView({ onBack, currentUser }: SettingsViewProps) {
                           <span className="text-sm font-medium text-white">
                             Clair
                           </span>
-                          {settings.theme === "light" && (
+                          {appTheme === "light" && (
                             <div className="flex items-center gap-1 text-xs text-blue-400">
                               <Check size={12} />
                               <span>Actif</span>
@@ -601,10 +598,9 @@ export function SettingsView({ onBack, currentUser }: SettingsViewProps) {
                       </button>
                     </div>
 
-                    <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                      <p className="text-xs text-yellow-400">
-                        Note : Le mode clair sera implémenté dans une future mise
-                        à jour. L'application utilise actuellement le mode sombre.
+                    <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                      <p className="text-xs text-blue-400">
+                        Le thème sélectionné s'applique à l'ensemble de l'application et est automatiquement sauvegardé.
                       </p>
                     </div>
                   </div>

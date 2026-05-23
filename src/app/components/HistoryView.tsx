@@ -20,11 +20,22 @@ const ACTION_TYPES = [
   { value: "all", label: "Tous", color: "gray" },
   { value: "vente", label: "Vente", color: "green" },
   { value: "paiement", label: "Paiement", color: "blue" },
-  { value: "depot", label: "Dépôt", color: "purple" },
+  { value: "dépôt", label: "Dépôt", color: "purple" },
   { value: "dette", label: "Dette", color: "orange" },
-  { value: "produit", label: "Produit", color: "cyan" },
-  { value: "client", label: "Client", color: "pink" },
+  { value: "remboursement", label: "Remboursement", color: "emerald" },
+  { value: "produit_ajouté", label: "Produit ajouté", color: "cyan" },
+  { value: "produit_modifié", label: "Produit modifié", color: "teal" },
+  { value: "produit_supprimé", label: "Produit supprimé", color: "red" },
+  { value: "réapprovisionnement", label: "Réappro.", color: "lime" },
+  { value: "pièce_utilisée", label: "Pièce utilisée", color: "amber" },
+  { value: "réparation", label: "Réparation", color: "violet" },
+  { value: "clôture_réparation", label: "Clôture", color: "fuchsia" },
+  { value: "client_ajouté", label: "Client ajouté", color: "pink" },
+  { value: "client_modifié", label: "Client modifié", color: "rose" },
+  { value: "client_supprimé", label: "Client supprimé", color: "red" },
   { value: "connexion", label: "Connexion", color: "indigo" },
+  { value: "déconnexion", label: "Déconnexion", color: "slate" },
+  { value: "thème_modifié", label: "Thème", color: "sky" },
 ];
 
 export function HistoryView({ onBack }: HistoryViewProps) {
@@ -75,9 +86,19 @@ export function HistoryView({ onBack }: HistoryViewProps) {
       blue: "text-blue-400",
       purple: "text-purple-400",
       orange: "text-orange-400",
+      emerald: "text-emerald-400",
       cyan: "text-cyan-400",
+      teal: "text-teal-400",
+      red: "text-red-400",
+      lime: "text-lime-400",
+      amber: "text-amber-400",
+      violet: "text-violet-400",
+      fuchsia: "text-fuchsia-400",
       pink: "text-pink-400",
+      rose: "text-rose-400",
       indigo: "text-indigo-400",
+      slate: "text-slate-400",
+      sky: "text-sky-400",
       gray: "text-gray-400",
     };
     const color = getActionColor(type);
@@ -228,21 +249,25 @@ export function HistoryView({ onBack }: HistoryViewProps) {
                 {/* Icon */}
                 <div
                   className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    action.type === "vente"
-                      ? "bg-green-500/10"
-                      : action.type === "paiement"
-                      ? "bg-blue-500/10"
-                      : action.type === "depot"
-                      ? "bg-purple-500/10"
-                      : action.type === "dette"
-                      ? "bg-orange-500/10"
-                      : action.type === "produit"
-                      ? "bg-cyan-500/10"
-                      : action.type === "client"
-                      ? "bg-pink-500/10"
-                      : action.type === "connexion"
-                      ? "bg-indigo-500/10"
-                      : "bg-gray-500/10"
+                    action.type === "vente" ? "bg-green-500/10" :
+                    action.type === "paiement" ? "bg-blue-500/10" :
+                    action.type === "dépôt" ? "bg-purple-500/10" :
+                    action.type === "dette" ? "bg-orange-500/10" :
+                    action.type === "remboursement" ? "bg-emerald-500/10" :
+                    action.type === "produit_ajouté" ? "bg-cyan-500/10" :
+                    action.type === "produit_modifié" ? "bg-teal-500/10" :
+                    action.type === "produit_supprimé" ? "bg-red-500/10" :
+                    action.type === "réapprovisionnement" ? "bg-lime-500/10" :
+                    action.type === "pièce_utilisée" ? "bg-amber-500/10" :
+                    action.type === "réparation" ? "bg-violet-500/10" :
+                    action.type === "clôture_réparation" ? "bg-fuchsia-500/10" :
+                    action.type === "client_ajouté" ? "bg-pink-500/10" :
+                    action.type === "client_modifié" ? "bg-rose-500/10" :
+                    action.type === "client_supprimé" ? "bg-red-500/10" :
+                    action.type === "connexion" ? "bg-indigo-500/10" :
+                    action.type === "déconnexion" ? "bg-slate-500/10" :
+                    action.type === "thème_modifié" ? "bg-sky-500/10" :
+                    "bg-gray-500/10"
                   }`}
                 >
                   <Activity

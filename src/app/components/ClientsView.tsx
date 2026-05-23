@@ -90,6 +90,20 @@ export const ClientsView = ({ onBack }: { onBack: () => void }) => {
       const saved = await api.saveClient({ nom: form.nom, telephone: form.telephone });
       setClients([saved, ...clients]);
       setForm({ nom: "", telephone: "" });
+
+      // Log ajout client
+      const currentUser = api.getCurrentUser();
+      await api.logAction({
+        type: "client_ajouté",
+        description: `Client ajouté — ${saved.nom} · ${saved.telephone}`,
+        userId: currentUser?.id,
+        userName: currentUser?.nom,
+        metadata: {
+          clientId: saved.id,
+          nom: saved.nom,
+          telephone: saved.telephone,
+        },
+      });
     } catch (err) {
       console.error("Failed to save client:", err);
     }
@@ -101,6 +115,21 @@ export const ClientsView = ({ onBack }: { onBack: () => void }) => {
     try {
       const updated = await api.saveClient({ ...editingClient, nom: editForm.nom, telephone: editForm.telephone });
       setClients(clients.map(c => c.id === updated.id ? updated : c));
+
+      // Log modification client
+      const currentUser = api.getCurrentUser();
+      await api.logAction({
+        type: "client_modifié",
+        description: `Client modifié — ${updated.nom}`,
+        userId: currentUser?.id,
+        userName: currentUser?.nom,
+        metadata: {
+          clientId: updated.id,
+          nom: updated.nom,
+          telephone: updated.telephone,
+        },
+      });
+
       closeEditModal();
     } catch (err) {
       console.error("Failed to update client:", err);
@@ -110,10 +139,24 @@ export const ClientsView = ({ onBack }: { onBack: () => void }) => {
   };
 
   const handleDelete = async (id: string) => {
+    const client = clients.find(c => c.id === id);
     try {
       await api.deleteClient(id);
       setClients(clients.filter(c => c.id !== id));
       setConfirmDelete(null);
+
+      // Log suppression client
+      const currentUser = api.getCurrentUser();
+      await api.logAction({
+        type: "client_supprimé",
+        description: `Client supprimé — ${client?.nom || id}`,
+        userId: currentUser?.id,
+        userName: currentUser?.nom,
+        metadata: {
+          clientId: id,
+          nom: client?.nom,
+        },
+      });
     } catch (err) {
       console.error("Failed to delete client:", err);
     }
@@ -136,6 +179,21 @@ export const ClientsView = ({ onBack }: { onBack: () => void }) => {
       const updated = { ...debt, status: "paid" as const };
       const saved   = await api.saveDebt(updated);
       setGlobalDebts(globalDebts.map(d => d.id === debt.id ? saved : d));
+
+      // Log remboursement
+      const currentUser = api.getCurrentUser();
+      await api.logAction({
+        type: "remboursement",
+        description: `Remboursement — ${debt.clientName} · ${formatCurrency(debt.amount)} · Solde restant : 0`,
+        userId: currentUser?.id,
+        userName: currentUser?.nom,
+        metadata: {
+          debtId: debt.id,
+          clientName: debt.clientName,
+          montant: debt.amount,
+          soldeRestant: 0,
+        },
+      });
     } catch (err) {
       console.error("Failed to pay debt:", err);
     }
@@ -157,6 +215,22 @@ export const ClientsView = ({ onBack }: { onBack: () => void }) => {
       };
       const saved = await api.saveDebt(newDebt);
       setGlobalDebts([...globalDebts, saved]);
+
+      // Log création dette
+      const currentUser = api.getCurrentUser();
+      await api.logAction({
+        type: "dette",
+        description: `Dette créée — ${addDebtFor.nom} · ${formatCurrency(Number(debtForm.montant))}`,
+        userId: currentUser?.id,
+        userName: currentUser?.nom,
+        metadata: {
+          debtId: saved.id,
+          clientName: addDebtFor.nom,
+          montant: Number(debtForm.montant),
+          description: debtForm.description || "Achat divers",
+        },
+      });
+
       setAddDebtFor(null);
       setDebtForm({ description: "", montant: "" });
     } catch (err) {

@@ -68,6 +68,19 @@ export default function App() {
   const [notification, setNotification] = React.useState("Chargement…");
   const [connectionStatus, setConnectionStatus] = React.useState<'ok' | 'syncing' | 'error'>('ok');
 
+  // ── Thème ───────────────────────────────────────────────────────────────
+  const [appTheme, setAppTheme] = React.useState<'dark' | 'light'>(() => {
+    // Charger depuis localStorage au montage pour éviter le flash
+    try {
+      const settings = localStorage.getItem('conde_settings');
+      if (settings) {
+        const parsed = JSON.parse(settings);
+        return parsed.theme || 'dark';
+      }
+    } catch {}
+    return 'dark';
+  });
+
   const loadAppData = React.useCallback(async () => {
     const [txData, prodData, debtData, repairData] = await Promise.all([
       api.getTransactions(),
@@ -132,18 +145,25 @@ export default function App() {
 
   const handleLogout = React.useCallback(async () => {
     if (!confirm("Êtes-vous sûr de vouloir vous déconnecter ?")) return;
-    
+
     await api.logAction({
-      type: "connexion",
+      type: "déconnexion",
       description: `${currentUser?.nom} s'est déconnecté`,
       userId: currentUser?.id,
       userName: currentUser?.nom,
     });
-    
+
     api.logout();
     setCurrentUser(null);
     setCurrentView("login");
   }, [currentUser]);
+
+  // ── Changer le thème ─────────────────────────────────────────────────────
+  const handleThemeChange = React.useCallback(async (newTheme: 'dark' | 'light') => {
+    setAppTheme(newTheme);
+    const newSettings = { theme: newTheme };
+    await api.saveSettings(newSettings);
+  }, []);
 
   // ── Mémoïsations (avant tout return conditionnel) ────────────────────
   const salesByProduct = React.useMemo(() => {
@@ -207,10 +227,16 @@ export default function App() {
   }
 
   return (
-    /* Fond sombre plein écran, centré sur desktop */
-    <div className="bg-[#05070a] min-h-dvh flex sm:items-center sm:justify-center font-sans text-gray-100">
+    /* Fond plein écran, centré sur desktop */
+    <div className={`min-h-dvh flex sm:items-center sm:justify-center font-sans transition-colors ${
+      appTheme === 'dark' ? 'bg-[#05070a] text-gray-100' : 'bg-gray-100 text-gray-900'
+    }`}>
       {/* Conteneur principal : plein écran sur mobile, cadre téléphone sur desktop */}
-      <div className="w-full sm:max-w-[430px] min-h-dvh sm:min-h-0 sm:h-[844px] bg-[#0c111a] sm:rounded-[2.5rem] sm:border sm:border-gray-800/80 sm:shadow-2xl overflow-hidden flex flex-col relative">
+      <div className={`w-full sm:max-w-[430px] min-h-dvh sm:min-h-0 sm:h-[844px] sm:rounded-[2.5rem] sm:border sm:shadow-2xl overflow-hidden flex flex-col relative transition-colors ${
+        appTheme === 'dark'
+          ? 'bg-[#0c111a] sm:border-gray-800/80'
+          : 'bg-white sm:border-gray-300'
+      }`}>
 
         {/* ── Modals ─────────────────────────────────────────── */}
         <NotificationsModal isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
@@ -241,38 +267,58 @@ export default function App() {
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x pr-8">
                 <button
                   onClick={() => setIsBestProductOpen(true)}
-                  className="p-2.5 bg-gray-800/40 hover:bg-yellow-500/10 border border-gray-700/50 hover:border-yellow-500/30 rounded-xl transition-all group/btn cursor-pointer shadow-lg snap-start shrink-0"
+                  className={`p-2.5 hover:bg-yellow-500/10 border hover:border-yellow-500/30 rounded-xl transition-all group/btn cursor-pointer shadow-lg snap-start shrink-0 ${
+                    appTheme === 'dark' ? 'bg-gray-800/40 border-gray-700/50' : 'bg-gray-100 border-gray-300'
+                  }`}
                   title="Produit le plus vendu"
                 >
-                  <Trophy size={17} className="text-gray-400 group-hover/btn:text-yellow-400 transition-all group-hover/btn:scale-110" />
+                  <Trophy size={17} className={`group-hover/btn:text-yellow-400 transition-all group-hover/btn:scale-110 ${
+                    appTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`} />
                 </button>
                 <button
                   onClick={() => setIsWorstProductOpen(true)}
-                  className="p-2.5 bg-gray-800/40 hover:bg-red-500/10 border border-gray-700/50 hover:border-red-500/30 rounded-xl transition-all group/btn cursor-pointer shadow-lg snap-start shrink-0"
+                  className={`p-2.5 hover:bg-red-500/10 border hover:border-red-500/30 rounded-xl transition-all group/btn cursor-pointer shadow-lg snap-start shrink-0 ${
+                    appTheme === 'dark' ? 'bg-gray-800/40 border-gray-700/50' : 'bg-gray-100 border-gray-300'
+                  }`}
                   title="Produit le moins vendu"
                 >
-                  <TrendingDown size={17} className="text-gray-400 group-hover/btn:text-red-400 transition-all group-hover/btn:scale-110" />
+                  <TrendingDown size={17} className={`group-hover/btn:text-red-400 transition-all group-hover/btn:scale-110 ${
+                    appTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`} />
                 </button>
                 <button
                   onClick={() => setIsStatsOpen(true)}
-                  className="p-2.5 bg-gray-800/40 hover:bg-green-500/10 border border-gray-700/50 hover:border-green-500/30 rounded-xl transition-all group/btn cursor-pointer shadow-lg snap-start shrink-0"
+                  className={`p-2.5 hover:bg-green-500/10 border hover:border-green-500/30 rounded-xl transition-all group/btn cursor-pointer shadow-lg snap-start shrink-0 ${
+                    appTheme === 'dark' ? 'bg-gray-800/40 border-gray-700/50' : 'bg-gray-100 border-gray-300'
+                  }`}
                   title="Statistiques"
                 >
-                  <BarChart3 size={17} className="text-gray-400 group-hover/btn:text-green-400 transition-all group-hover/btn:scale-110" />
+                  <BarChart3 size={17} className={`group-hover/btn:text-green-400 transition-all group-hover/btn:scale-110 ${
+                    appTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`} />
                 </button>
               </div>
-              <div className="absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-[#0c111a] to-transparent pointer-events-none" />
+              <div className={`absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l to-transparent pointer-events-none ${
+                appTheme === 'dark' ? 'from-[#0c111a]' : 'from-white'
+              }`} />
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsNotificationsOpen(true)}
-                className="p-2.5 hover:bg-gray-800 rounded-xl transition-colors group cursor-pointer"
+                className={`p-2.5 rounded-xl transition-colors group cursor-pointer ${
+                  appTheme === 'dark' ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
+                }`}
                 title="Notifications"
               >
                 <div className="relative">
-                  <Bell size={19} className="text-gray-400 group-hover:text-blue-400 transition-colors" />
-                  <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 border-2 border-[#0c111a] rounded-full" />
+                  <Bell size={19} className={`group-hover:text-blue-400 transition-colors ${
+                    appTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`} />
+                  <div className={`absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 border-2 rounded-full ${
+                    appTheme === 'dark' ? 'border-[#0c111a]' : 'border-white'
+                  }`} />
                 </div>
               </button>
 
@@ -281,17 +327,23 @@ export default function App() {
                 className="p-2.5 hover:bg-red-500/10 rounded-xl transition-colors group cursor-pointer"
                 title={`Déconnexion (${currentUser?.nom})`}
               >
-                <LogOut size={19} className="text-gray-400 group-hover:text-red-400 transition-colors" />
+                <LogOut size={19} className={`group-hover:text-red-400 transition-colors ${
+                  appTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                }`} />
               </button>
             </div>
           </div>
 
           <div className="text-center">
-            <Motion.h1 layoutId="title" className="text-2xl font-black tracking-tight text-white">
+            <Motion.h1 layoutId="title" className={`text-2xl font-black tracking-tight ${
+              appTheme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
               Conde <span className="text-blue-500">Réparation</span>
             </Motion.h1>
             <div className="h-0.5 w-12 bg-blue-600 mx-auto mt-1 rounded-full opacity-50" />
-            <p className="text-[10px] text-gray-500 mt-1">
+            <p className={`text-[10px] mt-1 ${
+              appTheme === 'dark' ? 'text-gray-500' : 'text-gray-600'
+            }`}>
               {currentUser?.nom} • {currentUser?.role === 'admin' ? 'Administrateur' : 'Utilisateur'}
             </p>
           </div>
@@ -319,7 +371,13 @@ export default function App() {
             ) : currentView === "history" ? (
               <HistoryView key="history" onBack={handleBack} />
             ) : currentView === "settings" ? (
-              <SettingsView key="settings" onBack={handleBack} currentUser={currentUser} />
+              <SettingsView
+                key="settings"
+                onBack={handleBack}
+                currentUser={currentUser}
+                appTheme={appTheme}
+                onThemeChange={handleThemeChange}
+              />
             ) : (
               <Motion.div
                 key="other"
