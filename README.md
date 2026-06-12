@@ -1,11 +1,20 @@
+# Condé Réparation — Plateforme de gestion d'atelier
 
-  # Design application Conde Réparation
+Application web de gestion pour un atelier de réparation de téléphones : 
+suivi des réparations, clients, stock de pièces, et facturation.
 
-  This is a code bundle for Design application Conde Réparation. The original project is available at https://www.figma.com/design/kieGrnf6EV3dTO2mYzJadC/Design-application-Conde-R%C3%A9paration.
+🔗 **Démo live** : [conde-r-paration.vercel.app](https://conde-r-paration.vercel.app)
 
-  ## Running the code
+## Stack technique
+- **Frontend** : React + TypeScript, shadcn/ui
+- **Backend** : Supabase (base de données, fonctions edge, authentification)
+- **Déploiement** : Vercel
 
-  Run `npm i` to install the dependencies.
+## Pourquoi ce projet
+Construit pour digitaliser la gestion d'un atelier de réparation à Conakry — 
+remplacer les cahiers de suivi papier par un système centralisé.
 
-  Run `npm run dev` to start the development server.
-  
+## Lancer le projet localement
+```bash
+npm i
+npm run dev
